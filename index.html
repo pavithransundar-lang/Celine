@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Celine's Royal Reading Quest</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;900&display=swap" rel="stylesheet">
+    <style>
+      body {
+        font-family: 'Nunito', sans-serif;
+      }
+      @keyframes token-appear {
+        0% { transform: scale(0.5) rotate(-15deg); opacity: 0; }
+        60% { transform: scale(1.1) rotate(5deg); opacity: 1; }
+        80% { transform: scale(0.95) rotate(-2deg); }
+        100% { transform: scale(1) rotate(0deg); }
+      }
+      .animate-token-appear {
+        animation: token-appear 0.7s cubic-bezier(0.34, 1.56, 0.64, 1);
+      }
+      
+      .flying-butterfly-container {
+        position: fixed;
+        z-index: 1000; /* Ensure it's above other elements */
+        width: 48px; /* Match butterfly size */
+        height: 48px;
+        left: 0;
+        top: 0;
+        animation: fly-to-target 1.2s cubic-bezier(0.4, 0, 0.6, 1) forwards;
+        pointer-events: none;
+      }
+
+      @keyframes fly-to-target {
+        0% {
+          transform: translate(var(--start-x), var(--start-y)) scale(1.5) rotate(0deg);
+          opacity: 1;
+        }
+        40% {
+          transform: translate(calc(var(--start-x) + (var(--end-x) - var(--start-x)) * 0.4), calc(var(--start-y) + (var(--end-y) - var(--start-y)) * 0.4 - 70px)) scale(1.2) rotate(-20deg);
+          opacity: 1;
+        }
+        100% {
+          transform: translate(var(--end-x), var(--end-y)) scale(0.5) rotate(10deg);
+          opacity: 0;
+        }
+      }
+
+      /* AR View */
+      .ar-container {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        background-color: rgba(0,0,0,0.7);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        z-index: 500;
+        backdrop-filter: blur(5px);
+      }
+      .ar-video {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        transform: scaleX(-1); /* Mirror view */
+      }
+      .ar-overlay {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        pointer-events: none; /* Let clicks pass through to butterflies */
+      }
+      .ar-butterfly {
+        position: absolute;
+        width: 80px;
+        height: 80px;
+        cursor: pointer;
+        pointer-events: all;
+        transition: transform 0.2s, opacity 0.2s;
+        animation: butterfly-drift 5s infinite ease-in-out, pulse-glow 2.5s infinite ease-in-out;
+      }
+      .ar-butterfly:hover {
+        transform: scale(1.2) !important;
+      }
+      .ar-butterfly.caught {
+        animation: sparkle-out 0.5s forwards;
+      }
+      @keyframes butterfly-drift {
+        0%, 100% { transform: rotate(-5deg) translateX(0px); }
+        25% { transform: rotate(5deg) translateX(10px); }
+        50% { transform: rotate(-3deg) translateX(0px); }
+        75% { transform: rotate(8deg) translateX(-10px); }
+      }
+      @keyframes sparkle-out {
+          0% { transform: scale(1); opacity: 1; }
+          100% { transform: scale(2.5) rotate(180deg); opacity: 0; }
+      }
+      @keyframes pulse-glow {
+        0%, 100% {
+          filter: drop-shadow(0 5px 15px rgba(236, 72, 153, 0.4));
+        }
+        50% {
+          filter: drop-shadow(0 8px 25px rgba(236, 72, 153, 0.7));
+        }
+      }
+      
+      @keyframes castle-shimmer {
+        0%, 100% {
+          filter: drop-shadow(0 0 8px rgba(253, 224, 71, 0.6)); /* yellow-300 with opacity */
+        }
+        50% {
+          filter: drop-shadow(0 0 20px rgba(253, 224, 71, 1)); /* yellow-300 full opacity */
+        }
+      }
+      .animate-castle-shimmer {
+        animation: castle-shimmer 2s infinite ease-in-out;
+      }
+
+      .ar-close-button {
+        position: absolute;
+        top: 20px;
+        right: 20px;
+        background: rgba(255,255,255,0.8);
+        border: none;
+        border-radius: 50%;
+        width: 40px;
+        height: 40px;
+        font-size: 24px;
+        font-weight: bold;
+        cursor: pointer;
+        z-index: 510;
+        color: #333;
+        line-height: 40px;
+        text-align: center;
+      }
+
+      /* Wing animations */
+      .wing {
+        animation-duration: 0.3s;
+        animation-timing-function: ease-in-out;
+        animation-iteration-count: infinite;
+        animation-direction: alternate;
+      }
+      .wing-left {
+        transform-origin: 90% 50%; /* Pivot point near the body */
+        animation-name: flutter-left;
+      }
+      .wing-right {
+        transform-origin: 10% 50%; /* Pivot point near the body */
+        animation-name: flutter-right;
+      }
+
+      @keyframes flutter-left {
+        from { transform: rotateY(0deg); }
+        to { transform: rotateY(60deg); }
+      }
+      @keyframes flutter-right {
+        from { transform: rotateY(0deg); }
+        to { transform: rotateY(-60deg); }
+      }
+
+      /* Journal Modal */
+      .journal-modal-backdrop {
+          position: fixed;
+          top: 0;
+          left: 0;
+          width: 100%;
+          height: 100%;
+          background-color: rgba(0,0,0,0.6);
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          z-index: 200;
+          backdrop-filter: blur(5px);
+      }
+      .journal-modal-content {
+          background-color: #fdf6e3; /* Parchment color */
+          color: #582f0e; /* Brown text */
+          padding: 2rem;
+          border-radius: 1rem;
+          box-shadow: 0 10px 25px rgba(0,0,0,0.3), 0 0 0 10px #e2c08d;
+          border: 2px solid #c8a876;
+          max-width: 90vw;
+          width: 600px;
+          max-height: 80vh;
+          overflow-y: auto;
+          position: relative;
+          font-family: 'Nunito', sans-serif;
+      }
+
+      /* Mood Selector Modal */
+      .mood-modal-backdrop {
+          position: fixed;
+          top: 0;
+          left: 0;
+          width: 100%;
+          height: 100%;
+          background-color: rgba(0,0,0,0.5);
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          z-index: 1000;
+          backdrop-filter: blur(8px);
+          transition: opacity 0.3s ease-in-out;
+      }
+      .mood-modal-content {
+          background: white;
+          padding: 2.5rem;
+          border-radius: 1.5rem;
+          box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+          text-align: center;
+          transform: scale(0.95);
+          opacity: 0;
+          animation: modal-appear 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+      }
+      @keyframes modal-appear {
+          to {
+              transform: scale(1);
+              opacity: 1;
+          }
+      }
+      .mood-options {
+          display: flex;
+          gap: 1.5rem;
+          margin-top: 1.5rem;
+      }
+      .mood-option {
+          cursor: pointer;
+          border: 4px solid transparent;
+          border-radius: 50%;
+          padding: 0.5rem;
+          transition: all 0.2s ease-in-out;
+      }
+      .mood-option:hover {
+          transform: scale(1.15) translateY(-5px);
+          border-color: #fbcfe8; /* light pink */
+      }
+      .mood-option span {
+          font-size: 5rem;
+          filter: drop-shadow(0 4px 8px rgba(0,0,0,0.1));
+      }
+
+      /* Dynamic Backgrounds */
+      .mood-happy-bg {
+        background-image: linear-gradient(to bottom right, #fef3c7, #fbcfe8, #e9d5ff); /* yellow-200, pink-200, purple-200 */
+      }
+      .mood-neutral-bg {
+        background-image: linear-gradient(to bottom right, #dbeafe, #e9d5ff, #fce7f3); /* blue-200, purple-200, pink-100 */
+      }
+      .mood-sad-bg {
+        background-image: linear-gradient(to bottom right, #c7d2fe, #e5e7eb, #e9d5ff); /* indigo-200, gray-200, purple-200 */
+      }
+    </style>
+  <script type="importmap">
+{
+  "imports": {
+    "react": "https://esm.sh/react@18.3.1",
+    "react-dom/client": "https://esm.sh/react-dom@18.3.1/client",
+    "react/jsx-runtime": "https://esm.sh/react@18.3.1/jsx-runtime",
+    "@google/genai": "https://esm.sh/@google/genai@latest",
+    "react-confetti": "https://esm.sh/react-confetti@6.1.0",
+    "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.0/",
+    "react/": "https://aistudiocdn.com/react@^19.2.0/"
+  }
+}
+</script>
+</head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/index.tsx"></script>
+  </body>
+</html>
