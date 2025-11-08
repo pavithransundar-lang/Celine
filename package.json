@@ -11,7 +11,7 @@
   "dependencies": {
     "react": "^19.2.0",
     "@google/genai": "latest",
-    "react-confetti": "6.1.0",
+    "react-confetti": "7.0.0-beta.2",
     "react-dom": "^19.2.0"
   },
   "devDependencies": {
